@@ -1,7 +1,13 @@
-# TOKEN TYPES
+# ARITHMETIC TYPES
 NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = (
     "NUMBER", "PLUS", "MINUS", "MUL", "DIV", "LPAREN", "RPAREN", "EOF"
     )
+# BOOLEAN TYPES
+TRUE, FALSE = "TRUE", "FALSE"
+AND, OR, NOT = "AND", "OR", "NOT"
+EQ, NEQ, LT, GT, LTE, GTE = "EQ", "NEQ", "LT", "GT", "LTE", "GTE"
+# TEXT TYPES
+STRING = "STRING"
 
 # TOKEN CLASS - represents a single token
 class Token:
@@ -49,6 +55,47 @@ class Lexer:
             if current == ')':
                 self.pos += 1
                 return Token(RPAREN, ')')
+            
+            # if statement for string types
+            if current == '"':
+                return self.string()
+            
+            # if statements for boolean types
+            if self.text[self.pos:].startswith("true"):
+                self.pos += 4
+                return Token(TRUE, True)
+            if self.text[self.pos:].startswith("false"):
+                self.pos += 5
+                return Token(FALSE, False)
+            if self.text[self.pos:].startswith("and"):
+                self.pos += 3
+                return Token(AND)
+            if self.text[self.pos:].startswith("or"):
+                self.pos += 2
+                return Token(OR)
+            if self.text[self.pos:].startswith("=="):
+                self.pos += 2
+                return Token(EQ)
+            if self.text[self.pos:].startswith("!="):
+                self.pos += 2
+                return Token(NEQ)
+            if self.text[self.pos:].startswith(">="):
+                self.pos += 2
+                return Token(GTE)
+            if self.text[self.pos:].startswith("<="):
+                self.pos += 2
+                return Token(LTE)
+
+            if current == '>':
+                self.pos += 1
+                return Token(GT)
+            if current == '<':
+                self.pos += 1
+                return Token(LT)
+            if current == '!':
+                self.pos += 1
+                return Token(NOT)
+
             # error for if an invalid character is found
             raise Exception(f"Invalid character: {current}")
         
@@ -64,6 +111,20 @@ class Lexer:
             self.pos += 1
         
         return Token(NUMBER, float(result))
+    
+    # method to get a string token from the input
+    def string(self):
+        self.pos += 1 # skips opening quote
+        result = ""
+        while self.pos < len(self.text) and self.text[self.pos] != '"':
+            result += self.text[self.pos]
+            self.pos += 1
+            
+        if self.pos >= len(self.text):
+            raise Exception("Unterminated string literal") # meaning user entered string without closing quote marks
+        
+        self.pos += 1 # skips closing quote
+        return Token(STRING, result)
     
 
 # PARSER CLASS - parsing tokens into an expression tree
@@ -84,6 +145,9 @@ class Parser:
         if token.type == NUMBER:
             self.eat(NUMBER)
             return token.value
+        elif token.type == STRING:
+            self.eat(STRING)
+            return token.value
         elif token.type == MINUS:
             self.eat(MINUS)
             return -self.factor()
@@ -92,6 +156,15 @@ class Parser:
             result = self.expr()
             self.eat(RPAREN)
             return result
+        elif token.type == TRUE:
+            self.eat(TRUE)
+            return True
+        elif token.type == FALSE:
+            self.eat(FALSE)
+            return False
+        elif token.type == NOT:
+            self.eat(NOT)
+            return not self.factor()
         else:
             raise Exception(f"Invalid factor: {token}")
     
@@ -108,18 +181,52 @@ class Parser:
                 result /= self.factor()
         return result
     
-    def expr(self):
+    def comparison(self):
         result = self.term()
-        # loop to handle addition and subtraction
-        while self.current_token.type in (PLUS, MINUS):
+
+        while self.current_token.type in (EQ, NEQ, LT, GT, LTE, GTE):
             token = self.current_token
-            if token.type == PLUS:
-                self.eat(PLUS)
-                result += self.term()
-            elif token.type == MINUS:
-                self.eat(MINUS)
-                result -= self.term()
+            if token.type == EQ:
+                self.eat(EQ)
+                result = result == self.term()
+            elif token.type == NEQ:
+                self.eat(NEQ)
+                result = result != self.term()
+            elif token.type == LT:
+                self.eat(LT)
+                result = result < self.term()
+            elif token.type == GT:
+                self.eat(GT)
+                result = result > self.term()
+            elif token.type == LTE:
+                self.eat(LTE)
+                result = result <= self.term()
+            elif token.type == GTE:
+                self.eat(GTE)
+                result = result >= self.term()
         return result
+
+    
+    def expr(self):
+        result = self.comparison()
+        while self.current_token.type in (AND, OR, PLUS):
+            token = self.current_token
+            if token.type == AND:
+                self.eat(AND)
+                result = result and self.comparison()
+            elif token.type == OR:
+                self.eat(OR)
+                result = result or self.comparison()
+            elif token.type == PLUS:
+                self.eat(PLUS)
+                right = self.comparison()
+                if isinstance(result, str) or isinstance(right, str):
+                    result = str(result) + str(right)
+                else:
+                    result += right
+        return result
+
+
 
 
 def evaluate_expression(text):
