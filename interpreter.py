@@ -1,13 +1,14 @@
 # ARITHMETIC TYPES
-NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = (
-    "NUMBER", "PLUS", "MINUS", "MUL", "DIV", "LPAREN", "RPAREN", "EOF"
-    )
+NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = "NUMBER", "PLUS", "MINUS", "MUL", "DIV", "LPAREN", "RPAREN", "EOF"    
 # BOOLEAN TYPES
 TRUE, FALSE = "TRUE", "FALSE"
 AND, OR, NOT = "AND", "OR", "NOT"
 EQ, NEQ, LT, GT, LTE, GTE = "EQ", "NEQ", "LT", "GT", "LTE", "GTE"
 # TEXT TYPES
 STRING = "STRING"
+# GLOBAL TYPES
+global_env = {}
+IDENTIFIER, ASSIGN, PRINT = "IDENTIFIER", "ASSIGN", "PRINT"
 
 # TOKEN CLASS - represents a single token
 class Token:
@@ -96,6 +97,19 @@ class Lexer:
                 self.pos += 1
                 return Token(NOT)
 
+            # if statement for identifiers
+            if current == '=':
+                self.pos += 1
+                return Token(ASSIGN, '=')
+            
+            if self.text[self.pos:].startswith("print"):
+                self.pos += 5
+                return Token(PRINT)
+            
+            # identifier, var names
+            if current.isalpha():
+                return self.identifier()
+                     
             # error for if an invalid character is found
             raise Exception(f"Invalid character: {current}")
         
@@ -126,19 +140,51 @@ class Lexer:
         self.pos += 1 # skips closing quote
         return Token(STRING, result)
     
+    def identifier(self):
+        result = ''
+        while self.pos < len(self.text) and self.text[self.pos].isalnum():
+            result += self.text[self.pos]
+            self.pos += 1
+        return Token(IDENTIFIER, result)
+
 
 # PARSER CLASS - parsing tokens into an expression tree
 class Parser:
-    def __init__(self, lexer):
+    def __init__(self, lexer, env):
         self.lexer = lexer
         self.current_token = lexer.get_next_token()
+        self.env = env # global variable store
         
     def eat(self, token_type):
         if self.current_token.type == token_type:
             self.current_token = self.lexer.get_next_token()
         else:
             raise Exception(f"Unexpected token: {self.current_token.type}, expected: {token_type}")
-    
+
+    def statement(self):
+        if self.current_token.type == IDENTIFIER:
+            # check assignment
+            var_name = self.current_token.value
+            self.eat(IDENTIFIER)
+            if self.current_token.type == ASSIGN:
+                self.eat(ASSIGN)
+                value = self.expr()
+                self.env[var_name] = value
+                return value
+            else:
+                # variable use
+                if var_name in self.env:
+                    return self.env[var_name]
+                else:
+                    raise Exception(f"Undefined variable: {var_name}")
+                
+        elif self.current_token.type == PRINT:
+            self.eat(PRINT)
+            value = self.expr()
+            return print(value)
+        else:
+            return self.expr()
+        
     # method to parse the expression
     def factor(self):
         token = self.current_token
@@ -165,6 +211,11 @@ class Parser:
         elif token.type == NOT:
             self.eat(NOT)
             return not self.factor()
+        elif token.type == IDENTIFIER:
+            var_name = token.value
+            self.eat(IDENTIFIER)
+            if var_name in self.env:
+                return self.env[var_name]
         else:
             raise Exception(f"Invalid factor: {token}")
     
@@ -227,12 +278,10 @@ class Parser:
         return result
 
 
-
-
 def evaluate_expression(text):
     lexer = Lexer(text)
-    parser = Parser(lexer)
-    return parser.expr()
+    parser = Parser(lexer, global_env)
+    return parser.statement()
 
 # run code
 if __name__ == "__main__":
