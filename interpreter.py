@@ -163,25 +163,15 @@ class Parser:
 
     def statement(self):
         if self.current_token.type == IDENTIFIER:
-            # check assignment
-            var_name = self.current_token.value
-            self.eat(IDENTIFIER)
-            if self.current_token.type == ASSIGN:
-                self.eat(ASSIGN)
-                value = self.expr()
-                self.env[var_name] = value
-                return value
-            else:
-                # variable use
-                if var_name in self.env:
-                    return self.env[var_name]
-                else:
-                    raise Exception(f"Undefined variable: {var_name}")
+            # Let full expression parsing handle it
+            return self.expr()
+
                 
         elif self.current_token.type == PRINT:
             self.eat(PRINT)
             value = self.expr()
-            return print(value)
+            print(value)
+            return None
         else:
             return self.expr()
         
@@ -291,6 +281,7 @@ if __name__ == "__main__":
             if line.strip() == "":
                 continue
             result = evaluate_expression(line)
-            print(result)
+            if result is not None:
+                print(result)
         except Exception as e:
             print(f"Error: {e}")
