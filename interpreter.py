@@ -1,14 +1,20 @@
 # ARITHMETIC TYPES
 NUMBER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = "NUMBER", "PLUS", "MINUS", "MUL", "DIV", "LPAREN", "RPAREN", "EOF"    
+
 # BOOLEAN TYPES
 TRUE, FALSE = "TRUE", "FALSE"
 AND, OR, NOT = "AND", "OR", "NOT"
 EQ, NEQ, LT, GT, LTE, GTE = "EQ", "NEQ", "LT", "GT", "LTE", "GTE"
+
 # TEXT TYPES
 STRING = "STRING"
+
 # GLOBAL TYPES
 global_env = {}
 IDENTIFIER, ASSIGN, PRINT = "IDENTIFIER", "ASSIGN", "PRINT"
+
+# CONTROL FLOW TYPES
+IF, ELSE, WHILE, LBRACE, RBRACE, INPUT = "IF", "ELSE", "WHILE", "LBRACE", "RBRACE", "INPUT"
 
 # TOKEN CLASS - represents a single token
 class Token:
@@ -106,6 +112,14 @@ class Lexer:
                 self.pos += 5
                 return Token(PRINT)
             
+            if current == '{':
+                self.pos += 1
+                return Token(LBRACE)
+
+            if current == '}':
+                self.pos += 1
+                return Token(RBRACE)
+
             # identifier, var names
             if current.isalpha():
                 return self.identifier()
@@ -145,7 +159,39 @@ class Lexer:
         while self.pos < len(self.text) and self.text[self.pos].isalnum():
             result += self.text[self.pos]
             self.pos += 1
+
+        # Keyword detection
+        keywords = {
+            "if": IF,
+            "else": ELSE,
+            "while": WHILE,
+            "input": INPUT,
+            "print": PRINT,
+            "true": TRUE,
+            "false": FALSE,
+        }
+
+        if result in keywords:
+            if result == "true":
+                return Token(TRUE, True)
+            elif result == "false":
+                return Token(FALSE, False)
+            return Token(keywords[result])
+        
         return Token(IDENTIFIER, result)
+
+
+class TokenStream:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+
+    def get_next_token(self):
+        if self.pos < len(self.tokens):
+            tok = self.tokens[self.pos]
+            self.pos += 1
+            return tok
+        return Token(EOF)
 
 
 # PARSER CLASS - parsing tokens into an expression tree
@@ -161,21 +207,92 @@ class Parser:
         else:
             raise Exception(f"Unexpected token: {self.current_token.type}, expected: {token_type}")
 
-    def statement(self):
-        if self.current_token.type == IDENTIFIER:
-            # Let full expression parsing handle it
-            return self.expr()
+    def parse_block(self):
+        self.eat(LBRACE)
+        while self.current_token.type != RBRACE:
+            self.statement()
+        self.eat(RBRACE)
 
-                
+    def if_statement(self):
+        self.eat(IF)
+        self.eat(LPAREN)
+        condition = self.expr()
+        self.eat(RPAREN)
+        if condition:
+            self.parse_block()
+        elif self.current_token.type == ELSE:
+            self.eat(ELSE)
+            self.parse_block()
+
+    def while_statement(self):
+        self.eat(WHILE)
+        self.eat(LPAREN)
+        condition_tokens = []
+
+        # Capture the condition expression tokens
+        paren_count = 1
+        while paren_count > 0:
+            token = self.current_token
+            if token.type == LPAREN:
+                paren_count += 1
+            elif token.type == RPAREN:
+                paren_count -= 1
+            if paren_count > 0:
+                condition_tokens.append(token)
+            self.eat(token.type)  # advance token
+
+        self.eat(LBRACE)
+
+        # Capture block source
+        block_tokens = []
+        brace_count = 1
+        while brace_count > 0:
+            token = self.current_token
+            if token.type == LBRACE:
+                brace_count += 1
+            elif token.type == RBRACE:
+                brace_count -= 1
+            if brace_count > 0:
+                block_tokens.append(token)
+            self.eat(token.type)
+
+        # Execute while loop
+        while True:
+            condition_parser = Parser(TokenStream(condition_tokens), self.env.copy())
+            if not condition_parser.expr():
+                break
+            block_parser = Parser(TokenStream(block_tokens), self.env)
+            while block_parser.current_token.type != EOF:
+                block_parser.statement()
+
+
+    def statement(self):
+        if self.current_token.type == IF:
+            return self.if_statement()
+        elif self.current_token.type == WHILE:
+            return self.while_statement()
         elif self.current_token.type == PRINT:
             self.eat(PRINT)
             value = self.expr()
             print(value)
             return None
+        elif self.current_token.type == IDENTIFIER:
+            var_name = self.current_token.value
+            self.eat(IDENTIFIER)
+            if self.current_token.type == ASSIGN:
+                self.eat(ASSIGN)
+                value = self.expr()
+                self.env[var_name] = value
+                return value
+            else:
+                # It's just a variable usage
+                if var_name in self.env:
+                    return self.env[var_name]
+                else:
+                    raise Exception(f"Undefined variable: {var_name}")
         else:
             return self.expr()
         
-    # method to parse the expression
     def factor(self):
         token = self.current_token
         if token.type == NUMBER:
@@ -211,7 +328,6 @@ class Parser:
     
     def term(self):
         result = self.factor()
-        # loop to handle multiplication and division
         while self.current_token.type in (MUL, DIV):
             token = self.current_token
             if token.type == MUL:
@@ -224,7 +340,6 @@ class Parser:
     
     def comparison(self):
         result = self.term()
-
         while self.current_token.type in (EQ, NEQ, LT, GT, LTE, GTE):
             token = self.current_token
             if token.type == EQ:
@@ -247,7 +362,6 @@ class Parser:
                 result = result >= self.term()
         return result
 
-    
     def expr(self):
         result = self.comparison()
         while self.current_token.type in (AND, OR, PLUS):
@@ -278,9 +392,13 @@ if __name__ == "__main__":
     while True:
         try:
             line = input("calc> ")
+            # Collect full block if braces are unbalanced
+            while line.count("{") > line.count("}"):
+                line += "\n" + input("... ")
             if line.strip() == "":
                 continue
             result = evaluate_expression(line)
+
             if result is not None:
                 print(result)
         except Exception as e:
