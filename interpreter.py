@@ -16,6 +16,10 @@ IDENTIFIER, ASSIGN, PRINT = "IDENTIFIER", "ASSIGN", "PRINT"
 # CONTROL FLOW TYPES
 IF, ELSE, WHILE, LBRACE, RBRACE, INPUT = "IF", "ELSE", "WHILE", "LBRACE", "RBRACE", "INPUT"
 
+# ADDING LISTS
+LBRACKET, RBRACKET, COMMA = "LBRACKET", "RBRACKET", "COMMA"
+
+
 # TOKEN CLASS - represents a single token
 class Token:
     def __init__(self, type_, value = None):
@@ -119,6 +123,17 @@ class Lexer:
             if current == '}':
                 self.pos += 1
                 return Token(RBRACE)
+            
+            # if statements for list
+            if current == '[':
+                self.pos += 1
+                return Token(LBRACKET)
+            if current == ']':
+                self.pos += 1
+                return Token(RBRACKET)
+            if current == ',':
+                self.pos += 1
+                return Token(COMMA)
 
             # identifier, var names
             if current.isalpha():
@@ -230,7 +245,6 @@ class Parser:
                 self.eat(ELSE)
                 self.parse_block()
 
-
     def while_statement(self):
         self.eat(WHILE)
         self.eat(LPAREN)
@@ -282,6 +296,17 @@ class Parser:
             elif token.type == RBRACE:
                 brace_count -= 1
             self.current_token = self.lexer.get_next_token()
+
+    def list_expr(self):
+        elements = []
+        self.eat(LBRACKET)
+        if self.current_token.type != RBRACKET:
+            elements.append(self.expr())
+            while self.current_token.type == COMMA:
+                self.eat(COMMA)
+                elements.append(self.expr())
+        self.eat(RBRACKET)
+        return elements
 
 
     def statement(self):
@@ -341,6 +366,11 @@ class Parser:
             self.eat(IDENTIFIER)
             if var_name in self.env:
                 return self.env[var_name]
+        elif token.type == LBRACKET:
+            return self.list_expr()
+        elif token.type == RBRACKET:
+            self.eat(RBRACKET)
+            return []            
         else:
             raise Exception(f"Invalid factor: {token}")
     
