@@ -220,9 +220,16 @@ class Parser:
         self.eat(RPAREN)
         if condition:
             self.parse_block()
-        elif self.current_token.type == ELSE:
-            self.eat(ELSE)
-            self.parse_block()
+            if self.current_token.type == ELSE:
+                # skip the else block
+                self.eat(ELSE)
+                self.skip_block()
+        else:
+            self.skip_block()  # skip the if block
+            if self.current_token.type == ELSE:
+                self.eat(ELSE)
+                self.parse_block()
+
 
     def while_statement(self):
         self.eat(WHILE)
@@ -264,6 +271,17 @@ class Parser:
             block_parser = Parser(TokenStream(block_tokens), self.env)
             while block_parser.current_token.type != EOF:
                 block_parser.statement()
+
+    def skip_block(self):
+        self.eat(LBRACE)
+        brace_count = 1
+        while brace_count > 0:
+            token = self.current_token
+            if token.type == LBRACE:
+                brace_count += 1
+            elif token.type == RBRACE:
+                brace_count -= 1
+            self.current_token = self.lexer.get_next_token()
 
 
     def statement(self):
