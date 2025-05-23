@@ -463,18 +463,42 @@ def evaluate_expression(text):
     return parser.statement()
 
 # run code
-if __name__ == "__main__":
-    while True:
-        try:
-            line = input("calc> ")
-            # Collect full block if braces are unbalanced
-            while line.count("{") > line.count("}"):
-                line += "\n" + input("... ")
-            if line.strip() == "":
-                continue
-            result = evaluate_expression(line)
+import sys
 
-            if result is not None:
-                print(result)
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        # File mode
+        file_path = sys.argv[1]
+        try:
+            with open(file_path, 'r') as f:
+                code = f.read()
+                lines = code.splitlines()
+
+                # Merge multi-line blocks
+                full_line = ""
+                for line in lines:
+                    full_line += line + "\n"
+                    if full_line.count("{") == full_line.count("}"):
+                        if full_line.strip():
+                            result = evaluate_expression(full_line)
+                            if result is not None:
+                                print(result)
+                        full_line = ""
+        except FileNotFoundError:
+            print(f"Error: File not found: {file_path}")
         except Exception as e:
             print(f"Error: {e}")
+    else:
+        # REPL mode
+        while True:
+            try:
+                line = input("calc> ")
+                while line.count("{") > line.count("}"):
+                    line += "\n" + input("... ")
+                if line.strip() == "":
+                    continue
+                result = evaluate_expression(line)
+                if result is not None:
+                    print(result)
+            except Exception as e:
+                print(f"Error: {e}")

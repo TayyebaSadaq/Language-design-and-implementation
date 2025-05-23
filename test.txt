@@ -1,0 +1,24 @@
+x = 5
+y = 10
+z = x + y * 2
+print z
+
+if (z > 20) {
+    print "z is greater than 20"
+} else {
+    print "z is less or equal to 20"
+}
+
+list1 = [1, 2, 3]
+list1[1] = 42
+print list1
+
+count = 0
+while (count < 3) {
+    print count
+    count = count + 1
+}
+
+print true and false
+print not false
+print "hello" + " world"
