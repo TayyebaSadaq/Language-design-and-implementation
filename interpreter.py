@@ -322,19 +322,38 @@ class Parser:
         elif self.current_token.type == IDENTIFIER:
             var_name = self.current_token.value
             self.eat(IDENTIFIER)
-            if self.current_token.type == ASSIGN:
+
+            if self.current_token.type == LBRACKET:
+                self.eat(LBRACKET)
+                index = self.expr()
+                self.eat(RBRACKET)
+                self.eat(ASSIGN)
+                value = self.expr()
+
+                if var_name in self.env:
+                    target = self.env[var_name]
+                    if isinstance(target, list):
+                        index = int(index)
+                        if 0 <= index < len(target):
+                            target[index] = value
+                            return value
+                        else:
+                            raise Exception(f"Index {index} out of range for list '{var_name}'")
+                    else:
+                        raise Exception(f"Variable '{var_name}' is not a list")
+                else:
+                    raise Exception(f"Undefined variable: {var_name}")
+                    
+            elif self.current_token.type == ASSIGN:
                 self.eat(ASSIGN)
                 value = self.expr()
                 self.env[var_name] = value
                 return value
+            
+            elif var_name in self.env:
+                return self.env[var_name]
             else:
-                # It's just a variable usage
-                if var_name in self.env:
-                    return self.env[var_name]
-                else:
-                    raise Exception(f"Undefined variable: {var_name}")
-        else:
-            return self.expr()
+                raise Exception(f"Undefined variable: {var_name}")
         
     def factor(self):
         token = self.current_token
@@ -364,8 +383,16 @@ class Parser:
         elif token.type == IDENTIFIER:
             var_name = token.value
             self.eat(IDENTIFIER)
-            if var_name in self.env:
-                return self.env[var_name]
+            value = self.env.get(var_name)
+            if self.current_token.type == LBRACKET:
+                self.eat(LBRACKET)
+                index = self.expr()
+                self.eat(RBRACKET)
+                try:
+                    return value[int(index)]
+                except:
+                    raise Exception(f"Invalid index access on {var_name}")
+            return value
         elif token.type == LBRACKET:
             return self.list_expr()
         elif token.type == RBRACKET:
