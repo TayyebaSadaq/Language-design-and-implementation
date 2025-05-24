@@ -442,7 +442,7 @@ class Parser:
 
     def expr(self):
         result = self.comparison()
-        while self.current_token.type in (AND, OR, PLUS):
+        while self.current_token.type in (AND, OR, PLUS, MINUS):  # added MINUS here
             token = self.current_token
             if token.type == AND:
                 self.eat(AND)
@@ -457,7 +457,11 @@ class Parser:
                     result = str(result) + str(right)
                 else:
                     result += right
+            elif token.type == MINUS:
+                self.eat(MINUS)
+                result -= self.comparison()
         return result
+
 
 
 def evaluate_expression(text):
