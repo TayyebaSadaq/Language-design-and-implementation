@@ -413,7 +413,10 @@ class Parser:
                 result *= self.factor()
             elif token.type == DIV:
                 self.eat(DIV)
-                result /= self.factor()
+                divisor = self.factor()
+                if divisor == 0:
+                    raise Exception("Division by zero")
+                result /= divisor
         return result
     
     def comparison(self):
@@ -459,7 +462,11 @@ class Parser:
                     result += right
             elif token.type == MINUS:
                 self.eat(MINUS)
-                result -= self.comparison()
+                right = self.comparison()
+                if not (isinstance(result, (int, float)) and isinstance(right, (int, float))):
+                    raise Exception(f"Invalid operand types for '-': {type(result)} and {type(right)}")
+                result -= right
+
         return result
 
 
