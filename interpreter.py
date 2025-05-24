@@ -311,9 +311,11 @@ class Parser:
 
     def statement(self):
         if self.current_token.type == IF:
-            return self.if_statement()
+            self.if_statement()
+            return None
         elif self.current_token.type == WHILE:
-            return self.while_statement()
+            self.while_statement()
+            return None
         elif self.current_token.type == PRINT:
             self.eat(PRINT)
             value = self.expr()
@@ -324,6 +326,7 @@ class Parser:
             self.eat(IDENTIFIER)
 
             if self.current_token.type == LBRACKET:
+                # List mutation
                 self.eat(LBRACKET)
                 index = self.expr()
                 self.eat(RBRACKET)
@@ -333,27 +336,27 @@ class Parser:
                 if var_name in self.env:
                     target = self.env[var_name]
                     if isinstance(target, list):
-                        index = int(index)
-                        if 0 <= index < len(target):
-                            target[index] = value
-                            return value
-                        else:
-                            raise Exception(f"Index {index} out of range for list '{var_name}'")
+                        target[int(index)] = value
                     else:
                         raise Exception(f"Variable '{var_name}' is not a list")
                 else:
                     raise Exception(f"Undefined variable: {var_name}")
-                    
+                return None  # Don't return value on assignment
+
             elif self.current_token.type == ASSIGN:
                 self.eat(ASSIGN)
                 value = self.expr()
                 self.env[var_name] = value
-                return value
-            
+                return None  # Don't return value on assignment
+
             elif var_name in self.env:
                 return self.env[var_name]
             else:
                 raise Exception(f"Undefined variable: {var_name}")
+
+        else:
+            return self.expr()
+
         
     def factor(self):
         token = self.current_token
@@ -480,9 +483,7 @@ if __name__ == "__main__":
                     full_line += line + "\n"
                     if full_line.count("{") == full_line.count("}"):
                         if full_line.strip():
-                            result = evaluate_expression(full_line)
-                            if result is not None:
-                                print(result)
+                            evaluate_expression(full_line)
                         full_line = ""
         except FileNotFoundError:
             print(f"Error: File not found: {file_path}")
