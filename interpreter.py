@@ -401,6 +401,13 @@ class Parser:
         elif token.type == RBRACKET:
             self.eat(RBRACKET)
             return []            
+        elif token.type == INPUT:
+            self.eat(INPUT)
+            self.eat(LPAREN)
+            prompt = self.expr() if self.current_token.type != RPAREN else ""
+            self.eat(RPAREN)
+            return input(str(prompt))
+
         else:
             raise Exception(f"Invalid factor: {token}")
     
