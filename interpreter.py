@@ -84,6 +84,9 @@ class Lexer:
             if self.text[self.pos:].startswith("or"):
                 self.pos += 2
                 return Token(OR)
+            if self.text[self.pos:].startswith("not"):
+                self.pos += 3
+                return Token(NOT)
             if self.text[self.pos:].startswith("=="):
                 self.pos += 2
                 return Token(EQ)
@@ -103,9 +106,6 @@ class Lexer:
             if current == '<':
                 self.pos += 1
                 return Token(LT)
-            if current == '!':
-                self.pos += 1
-                return Token(NOT)
 
             # if statement for identifiers
             if current == '=':
