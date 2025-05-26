@@ -1,0 +1,38 @@
+x = 10 + 2 * 3
+print x
+
+y = (x - 4) / 2
+print y
+
+text = "Hello" + ", " + "world!"
+print text
+
+truth = true and not false
+print truth
+
+compare = x > y
+print compare
+
+list = [1, 2, 3, 4]
+print list
+
+list[2] = 99
+print list
+
+z = list[2] + 1
+print z
+
+if (x == 16) {
+  print "x is 16"
+} else {
+  print "x is not 16"
+}
+
+counter = 0
+while (counter < 3) {
+  print counter
+  counter = counter + 1
+}
+
+name = input("Enter your name: ")
+print "Welcome, " + name
