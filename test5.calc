@@ -1,0 +1,15 @@
+score = 75
+if (score >= 60) {
+  print "Passed"
+} else {
+  print "Failed"
+}
+
+i = 0
+while (i < 3) {
+  print i
+  i = i + 1
+}
+
+username = input("Enter your name: ")
+print "Welcome, " + username

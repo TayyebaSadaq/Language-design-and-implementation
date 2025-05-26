@@ -1,0 +1,4 @@
+greeting = "Hello"
+name = "world"
+message = greeting + ", " + name + "!"
+print message

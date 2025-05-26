@@ -1,0 +1,15 @@
+# BUILD.txt
+
+To build and run the interpreter:
+
+1. Ensure Python 3.x is installed on your system.
+
+2. Clone the repository or extract the ZIP archive.
+
+3. Navigate to the project directory in your terminal.
+
+4. Run the interpreter in interactive mode:
+   python interpreter.py
+
+5. To execute a source file:
+   python interpreter.py example1.calc

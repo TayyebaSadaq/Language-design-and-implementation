@@ -1,0 +1,8 @@
+x = true
+y = false
+z = x and not y
+print z
+
+print x or y
+print 5 > 2
+print 3 == 3
