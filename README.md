@@ -1,4 +1,4 @@
-[![SVG Banners](https://svg-banners.vercel.app/api?type=luminance&text1=Custom%20Language%20Interpreter&width=1000&height=300)](https://github.com/Akshay090/svg-banners)
+![Gradient SVG](https://gradient-svg-generator.vercel.app/api/svg?text=Custom+Language+Interpreter&height=120&gradientType=typewriterEnhanced&duration=4s&color0=191919&color1=ff007b&color2=ff0088&color3=420031)
 
 A mini programming language interpreter written in python supporting:
 - arithmetic operations
