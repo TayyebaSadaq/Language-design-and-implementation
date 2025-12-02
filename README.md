@@ -1,4 +1,4 @@
-# Custom Language Interpreter
+[![SVG Banners](https://svg-banners.vercel.app/api?type=luminance&text1=Custom%20Language%20Interpreter&width=1000&height=300)](https://github.com/Akshay090/svg-banners)
 
 A mini programming language interpreter written in python supporting:
 - arithmetic operations
